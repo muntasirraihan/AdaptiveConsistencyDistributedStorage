@@ -12,11 +12,11 @@ import gym
 
 # WARS model for Dynamo storage for read and write latencies (http://www.bailis.org/papers/pbs-vldbj2014.pdf)
 class WARS:
-    production_type = 'LNKD_DISK'
-    def __init__(self, production_type):
-        production_type = self.production_type # LNKD-SSD, LNKD-DISK, YMMR
-    def nextW(self): # return W in ms
-        if self.production_type == 'LNKD_SSD':
+    #production_type = 'LNKD_DISK'
+    #def __init__(self, production_type):
+        #production_type = self.production_type # LNKD-SSD, LNKD-DISK, YMMR
+    def nextW(self, production_type): # return W in ms
+        if production_type == 'LNKD_SSD':
             u = np.random.uniform(0, 1, 1)
             if u < .9122:
                 # generate Pareto(xm=.235, alpha=10)
@@ -25,7 +25,7 @@ class WARS:
                 # generate exponential(lambda=1.66)
                 return np.random.exponential(1.0/1.66)
 
-        if self.production_type == 'LNKD_DISK':
+        if production_type == 'LNKD_DISK':
             u = np.random.uniform(0, 1, 1)
             if u < .38:
                 # generate Pareto(xm=1.05, alpha=1.51)
@@ -34,7 +34,7 @@ class WARS:
                 # generate exponential(lambda=.183)
                 return np.random.exponential(1.0 / .183)
 
-        if self.production_type == 'YMMR':
+        if production_type == 'YMMR':
             u = np.random.uniform(0, 1)
             if u < .939:
                 return (np.random.pareto(3.35) + 1) * 3
@@ -42,8 +42,8 @@ class WARS:
                 # generate exponential(lambda=.183)
                 return np.random.exponential(1.0 / .0028)
 
-    def nextA(self):
-        if self.production_type in ['LNKD_SSD', 'LNKD_DISK']:
+    def nextA(self, production_type):
+        if production_type in ['LNKD_SSD', 'LNKD_DISK']:
             u = np.random.uniform(0, 1)
             if u < .9122:
                 # generate Pareto(xm=.235, alpha=10)
@@ -52,7 +52,7 @@ class WARS:
                 # generate exponential(lambda=1.66)
                 return np.random.exponential(1.0 / 1.66)
 
-        if self.production_type == 'YMMR':
+        if production_type == 'YMMR':
             u = np.random.uniform(0, 1, 1)
             if u < .982:
                 return (np.random.pareto(3.8) + 1) * 1.5
@@ -60,8 +60,8 @@ class WARS:
                 # generate exponential(lambda=.183)
                 return np.random.exponential(1.0 / .0217)
 
-    def nextR(self):
-        if self.production_type in ['LNKD_SSD', 'LNKD_DISK']:
+    def nextR(self, production_type):
+        if production_type in ['LNKD_SSD', 'LNKD_DISK']:
             u = np.random.uniform(0, 1, 1)
             if u < .9122:
                 # generate Pareto(xm=.235, alpha=10)
@@ -70,7 +70,7 @@ class WARS:
                 # generate exponential(lambda=1.66)
                 return np.random.exponential(1.0 / 1.66)
 
-        if self.production_type == 'YMMR':
+        if production_type == 'YMMR':
             u = np.random.uniform(0, 1, 1)
             if u < .982:
                 return (np.random.pareto(3.8) + 1) * 1.5
@@ -78,8 +78,8 @@ class WARS:
                 # generate exponential(lambda=.183)
                 return np.random.exponential(1.0 / .0217)
 
-    def nextS(self):
-        if self.production_type in ['LNKD_SSD', 'LNKD_DISK']:
+    def nextS(self, production_type):
+        if production_type in ['LNKD_SSD', 'LNKD_DISK']:
             u = np.random.uniform(0, 1, 1)
             if u < .9122:
                 # generate Pareto(xm=.235, alpha=10)
@@ -88,7 +88,7 @@ class WARS:
                 # generate exponential(lambda=1.66)
                 return np.random.exponential(1.0 / 1.66)
 
-        if self.production_type == 'YMMR':
+        if production_type == 'YMMR':
             u = np.random.uniform(0, 1, 1)
             if u < .982:
                 return (np.random.pareto(3.8) + 1) * 1.5
@@ -112,7 +112,7 @@ class DistributedStorageSystem:
     def Compute_PIC_PUA_Given_TC_TA(self, N, R, W, TC, TA, iterations, read_delay = 0, write_delay = 0):
         consistent_trials = 0
         latency_trails = 0
-        wars = WARS('LNKD_SSD')
+        wars = WARS()
         for i in range(iterations):
             Ws = zeros(N)
             As = zeros(N)
@@ -123,17 +123,17 @@ class DistributedStorageSystem:
 
             for replica in range(N):
                 #Ws.append(wars.nextW())
-                Ws[replica] = wars.nextW()
+                Ws[replica] = wars.nextW('LNKD_DISK')
 
                 #As.append(wars.nextA())
-                As[replica] = wars.nextA()
+                As[replica] = wars.nextA('LNKD_DISK')
 
                 write_latencies[replica] = Ws[replica] + As[replica] + write_delay
 
                 #Rs.append(wars.nextR())
                 #Ss.append(wars.nextS())
-                Rs[replica] = wars.nextR()
-                Ss[replica] = wars.nextS()
+                Rs[replica] = wars.nextR('LNKD_DISK')
+                Ss[replica] = wars.nextS('LNKD_DISK')
 
                 read_latencies[replica] = Rs[replica] + Ss[replica] + read_delay
             #print(write_latencies)
@@ -174,9 +174,12 @@ class DistributedStorageSystem:
 
     def tabularQLearning(self):
         # instead of this gym environemnt, we need a custom environment simulating the consistency behavior of a black box storage system
-        env = gym.make('FrozenLake-v0')
+        # env = gym.make('FrozenLake-v0')
         #Initialize table with all zeros
-        Q = np.zeros([env.observation_space.n,env.action_space.n])
+
+        granularity = 100 # granularity of state space (C=pic, A=pua) and action space
+
+        Q = np.zeros([granularity, granularity, granularity]) # 2 D state space, C, A, 2D action space read and write delay
 
         # Set learning parameters
         lr = .8
@@ -187,23 +190,44 @@ class DistributedStorageSystem:
         rList = []
         for i in range(num_episodes):
             #Reset environment and get first new observation
-            s = env.reset()
+            #s = env.reset()
+            scr, sar = self.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, .5, 1000) # initial state
+            #sc = int(round(scr))
+            #sa = int(round(sar))
+            sc = int_(floor(scr * 100))
+            sa = int_(floor(sar * 100))
+
             rAll = 0
             d = False
             j = 0
             #The Q-Table learning algorithm
             while j < 99:
                 j+=1
+
                 #Choose an action by greedily (with noise) picking from Q table
-                a = np.argmax(Q[s,:] + np.random.randn(1,env.action_space.n)*(1./(i+1)))
+                #ac, aa = np.argmax(Q[sc, sa, :] + np.random.randn(1, granularity)*(1./(i+1)))
+
+                # avoid noise for now
+                #print(sc, sa)
+                ac = np.argmax(Q[sc, sa:])
+                print(ac)
+
                 #Get new state and reward from environment
-                s1,r,d,_ = env.step(a)
+                #s1,r,d,_ = env.step(a)
+                sc1, sa1 = self.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, 0.5, 1000, ac/granularity)
+                r = sc1 + sa1
+
+                sc1 = int_(floor(sc1 * granularity))
+                sa1 = int_(floor(sa1 * granularity))
+                #print(sc1,sa1)
+
                 #Update Q-Table with new knowledge
-                Q[s,a] = Q[s,a] + lr*(r + y*np.max(Q[s1,:]) - Q[s,a])
+                Q[sc, sa, ac] = Q[sc, sa, ac] + lr*(r + y*np.max(Q[sc1, sa1,:]) - Q[sc, sa, ac])
                 rAll += r
-                s = s1
-                if d == True:
-                    break
+                sc = sc1
+                sa = sa1
+                #if d == True:
+                 #   break
                 #jList.append(j)
         rList.append(rAll)
 
@@ -218,5 +242,5 @@ if __name__ == "__main__":
     #wars = WARS('TS')
     #print(wars.nextW())
     store = DistributedStorageSystem()
-    print(store.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, .5, 1000, .2, .3))
-    #store.tabularQLearning()
+    #print(store.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, .5, 1000)) #
+    store.tabularQLearning()
