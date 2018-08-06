@@ -12,7 +12,7 @@ import gym
 
 # WARS model for Dynamo storage for read and write latencies (http://www.bailis.org/papers/pbs-vldbj2014.pdf)
 class WARS:
-    production_type = 'LNKD_SSD'
+    production_type = 'LNKD_DISK'
     def __init__(self, production_type):
         production_type = self.production_type # LNKD-SSD, LNKD-DISK, YMMR
     def nextW(self): # return W in ms
@@ -101,7 +101,15 @@ class WARS:
 class DistributedStorageSystem:
     # def __init__(self):
 
-    def Compute_PIC_PUA_Given_TC_TA(self, N, R, W, TC, TA, iterations):
+    # N = number of replicas
+    # R = read quorum
+    # W = write quorum
+    # TC = freshness interval
+    # TA = read latency deadline
+    # iterations = number of iterations to get estimates of PIC, and PUA
+    # read_delay = amount by which read invocation is delayed
+    # write_delay = amount by which write response is delayed
+    def Compute_PIC_PUA_Given_TC_TA(self, N, R, W, TC, TA, iterations, read_delay = 0, write_delay = 0):
         consistent_trials = 0
         latency_trails = 0
         wars = WARS('LNKD_SSD')
@@ -120,14 +128,14 @@ class DistributedStorageSystem:
                 #As.append(wars.nextA())
                 As[replica] = wars.nextA()
 
-                write_latencies[replica] = Ws[replica] + As[replica]
+                write_latencies[replica] = Ws[replica] + As[replica] + write_delay
 
                 #Rs.append(wars.nextR())
                 #Ss.append(wars.nextS())
                 Rs[replica] = wars.nextR()
                 Ss[replica] = wars.nextS()
 
-                read_latencies[replica] = Rs[replica] + Ss[replica]
+                read_latencies[replica] = Rs[replica] + Ss[replica] + read_delay
             #print(write_latencies)
 
             #sorted_write_latencies = write_latencies.sort()
@@ -210,5 +218,5 @@ if __name__ == "__main__":
     #wars = WARS('TS')
     #print(wars.nextW())
     store = DistributedStorageSystem()
-    print(store.Compute_PIC_PUA_Given_TC_TA(5, 1, 1, 0.001, .5, 1000))
+    print(store.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, .5, 1000, .2, .3))
     #store.tabularQLearning()
