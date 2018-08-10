@@ -111,7 +111,7 @@ class DistributedStorageSystem:
     # write_delay = amount by which write response is delayed
     def Compute_PIC_PUA_Given_TC_TA(self, N, R, W, TC, TA, iterations, read_delay = 0, write_delay = 0):
         consistent_trials = 0
-        latency_trails = 0
+        latency_trials = 0
         wars = WARS()
         for i in range(iterations):
             Ws = zeros(N)
@@ -153,7 +153,7 @@ class DistributedStorageSystem:
             #print(read_finish)
 
             if read_finish < TA:
-                latency_trails = latency_trails + 1
+                latency_trials = latency_trials + 1
 
             reply_replicas = []
 
@@ -168,16 +168,18 @@ class DistributedStorageSystem:
 
         PIC = consistent_trials / iterations
 
-        PUA = latency_trails / iterations
+        PUA = latency_trials / iterations
 
-        return  PIC, PUA
+        # return  PIC, PUA
 
-    def tabularQLearning(self):
+        return consistent_trials, latency_trials # return integer frequencies instead of real valued probabilities
+
+    def tabularQLearning(self, granularity):
         # instead of this gym environemnt, we need a custom environment simulating the consistency behavior of a black box storage system
         # env = gym.make('FrozenLake-v0')
         #Initialize table with all zeros
 
-        granularity = 100 # granularity of state space (C=pic, A=pua) and action space
+        # granularity = 100 # granularity of state space (C=pic, A=pua) and action space
 
         Q = np.zeros([granularity, granularity, granularity]) # 2 D state space, C, A, 2D action space read and write delay
 
@@ -191,11 +193,11 @@ class DistributedStorageSystem:
         for i in range(num_episodes):
             #Reset environment and get first new observation
             #s = env.reset()
-            scr, sar = self.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, .5, 1000) # initial state
+            sc, sa = self.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, .5, granularity) # initial state
             #sc = int(round(scr))
             #sa = int(round(sar))
-            sc = int_(floor(scr * 100))
-            sa = int_(floor(sar * 100))
+            # sc = int_(floor(scr * 100))
+            # sa = int_(floor(sar * 100))
 
             rAll = 0
             d = False
@@ -214,11 +216,11 @@ class DistributedStorageSystem:
 
                 #Get new state and reward from environment
                 #s1,r,d,_ = env.step(a)
-                sc1, sa1 = self.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, 0.5, 1000, ac/granularity)
+                sc1, sa1 = self.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, 0.5, 1000, ac)
                 r = sc1 + sa1
 
-                sc1 = int_(floor(sc1 * granularity))
-                sa1 = int_(floor(sa1 * granularity))
+                #sc1 = int_(floor(sc1 * granularity))
+                #sa1 = int_(floor(sa1 * granularity))
                 #print(sc1,sa1)
 
                 #Update Q-Table with new knowledge
@@ -243,4 +245,4 @@ if __name__ == "__main__":
     #print(wars.nextW())
     store = DistributedStorageSystem()
     #print(store.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, .5, 1000)) #
-    store.tabularQLearning()
+    store.tabularQLearning(100)
