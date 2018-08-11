@@ -152,6 +152,10 @@ class DistributedStorageSystem:
 
             #sorted_read_latencies = read_latencies.sort()
             #read_finish = sorted_read_latencies[R]
+            print("R")
+            print(R)
+            print("read_latencies")
+            print(read_latencies)
 
             read_finish = hpq.nsmallest(R, read_latencies)[0]
 
@@ -186,7 +190,8 @@ class DistributedStorageSystem:
 
         # granularity = 100 # granularity of state space (C=pic, A=pua) and action space
 
-        Q = np.zeros([granularity, granularity]) # 2 D state space, C, A, 2D action space read and write delay
+        #Q = np.zeros([granularity, granularity]) # 2 D state space, C, A, 2D action space read and write delay
+        Q = np.zeros([granularity, N]) # for each state, action is read quorum from 1 to N
 
         # Set learning parameters
         lr = .8
@@ -212,12 +217,12 @@ class DistributedStorageSystem:
                 j+=1
 
                 #Choose an action by greedily (with noise) picking from Q table
-                ac = np.argmax(Q[sc, :] + np.random.randn(1, granularity)*(1./(i+1)))
+                #ac = np.argmax(Q[sc, :] + np.random.randn(1, N)*(1./(i+1)))
 
                 # avoid noise for now
                 #print(sc, sa)
-                #ac = np.argmax(Q[sc:])
-                if (ac >= granularity):
+                ac = np.argmax(Q[sc:]) + 1 # read quorum needs to be in 1 to N
+                if (ac > N or ac < 1):
                     continue
                 #print(ac)
                 #if (Q[sc,0] > Q[sc,1]):
@@ -228,7 +233,11 @@ class DistributedStorageSystem:
                 #Get new state and reward from environment
                 #s1,r,d,_ = env.step(a)
                 #if (ac == 0):
-                sc1, sa1 = self.Compute_PIC_PUA_Given_TC_TA(N, 1, 1, 0.1, 0.5, granularity, ac/granularity)
+                #sc1, sa1 = self.Compute_PIC_PUA_Given_TC_TA(N, 1, 1, 0.1, 0.5, granularity, ac/granularity) # read delay action
+                print("action R")
+                print(ac)
+                sc1, sa1 = self.Compute_PIC_PUA_Given_TC_TA(N, ac, 1, 0.1, 0.5, granularity) # read quorum action
+
                 #else:
                  #   sc1, sa1 = self.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, 0.5, granularity, -1)
                 #r = sc1 + sa1
@@ -265,22 +274,28 @@ class DistributedStorageSystem:
 
         C = np.zeros(granularity)
         A = np.zeros(granularity)
+        R = np.zeros(granularity)
         T = np.zeros(granularity)
 
         for i in range(granularity):
-            ac = np.argmax(Q[sc, :])
+            ac = np.argmax(Q[sc, :]) + 1
             print(sc, sa, ac, Q[sc, ac])
-            sc, sa = self.Compute_PIC_PUA_Given_TC_TA(N, 1, 1, 0.1, 0.5, granularity, ac / granularity)
+            #sc, sa = self.Compute_PIC_PUA_Given_TC_TA(N, 1, 1, 0.1, 0.5, granularity, ac / granularity) # read delay policy
+            sc, sa = self.Compute_PIC_PUA_Given_TC_TA(N, ac, 1, 0.1, 0.5, granularity)  # read quorum policy
             C[i] = sc / granularity
             A[i] = sa / granularity
+            R[i] = ac
             T[i] = i
 
         #plt.plot(C)
 
 
-        pyplot.plot(T, C, 'C')
-        pyplot.plot(T, A)
-        pyplot.plot(T, C + A)
+        #pyplot.plot(T, C, 'C')
+        #pyplot.plot(T, A)
+        #pyplot.plot(T, C)
+        pyplot.plot(T, C)
+        pyplot.show()
+        pyplot.plot(T, R)
         pyplot.show()
 
 
@@ -291,4 +306,4 @@ if __name__ == "__main__":
     #print(wars.nextW())
     store = DistributedStorageSystem()
     #print(store.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, .5, 1000)) #
-    store.tabularQLearning(300, 5)
+    store.tabularQLearning(1000, 5)
