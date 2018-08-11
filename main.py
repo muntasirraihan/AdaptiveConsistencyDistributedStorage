@@ -3,7 +3,12 @@ from numpy import *
 
 import numpy as np
 import heapq as hpq
+import tkinter
 import gym
+
+#  import matplotlib.pyplot as plt
+#from pandas import Series
+from matplotlib import pyplot
 
 # get next state (C,A) and reward from environment
 # C = (pic: probablity of staleness)
@@ -174,7 +179,7 @@ class DistributedStorageSystem:
 
         return consistent_trials, latency_trials # return integer frequencies instead of real valued probabilities
 
-    def tabularQLearning(self, granularity):
+    def tabularQLearning(self, granularity, N):
         # instead of this gym environemnt, we need a custom environment simulating the consistency behavior of a black box storage system
         # env = gym.make('FrozenLake-v0')
         #Initialize table with all zeros
@@ -186,14 +191,14 @@ class DistributedStorageSystem:
         # Set learning parameters
         lr = .8
         y = .95
-        num_episodes = 2000
+        num_episodes = 200
         #create lists to contain total rewards and steps per episode
         #jList = []
         rList = []
         for i in range(num_episodes):
             #Reset environment and get first new observation
             #s = env.reset()
-            sc, sa = self.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, .5, granularity) # initial state
+            sc, sa = self.Compute_PIC_PUA_Given_TC_TA(N, 1, 1, 0.1, .5, granularity) # initial state
             #sc = int(round(scr))
             #sa = int(round(sar))
             # sc = int_(floor(scr * 100))
@@ -223,7 +228,7 @@ class DistributedStorageSystem:
                 #Get new state and reward from environment
                 #s1,r,d,_ = env.step(a)
                 #if (ac == 0):
-                sc1, sa1 = self.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, 0.5, granularity, ac/10.0)
+                sc1, sa1 = self.Compute_PIC_PUA_Given_TC_TA(N, 1, 1, 0.1, 0.5, granularity, ac/granularity)
                 #else:
                  #   sc1, sa1 = self.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, 0.5, granularity, -1)
                 #r = sc1 + sa1
@@ -233,7 +238,7 @@ class DistributedStorageSystem:
                 #print(sc1,sa1)
 
                 #Update Q-Table with new knowledge
-                print (sc, ac, Q[sc,ac])
+                #print (sc, ac, Q[sc,ac])
                 #print (lr*(r + y*np.max(Q[sc1,:]) - Q[sc, ac]))
 
                 Q[sc, ac] = Q[sc, ac] + lr*(r + y*np.max(Q[sc1,:]) - Q[sc, ac])
@@ -246,10 +251,38 @@ class DistributedStorageSystem:
                 #jList.append(j)
         rList.append(rAll)
 
-        print ("Score over time: " +  str(sum(rList)/num_episodes))
+        #print ("Score over time: " +  str(sum(rList)/num_episodes))
 
-        print("Final Q-Table Values")
-        print(Q)
+        #print("Final Q-Table Values")
+        #print(Q)
+        #print(np.count_nonzero(Q))
+
+        # traverse learned policy
+
+        print ("traversing learned policy")
+        # initial state
+        sc, sa = self.Compute_PIC_PUA_Given_TC_TA(N, 1, 1, 0.1, .5, granularity)  # initial state
+
+        C = np.zeros(granularity)
+        A = np.zeros(granularity)
+        T = np.zeros(granularity)
+
+        for i in range(granularity):
+            ac = np.argmax(Q[sc, :])
+            print(sc, sa, ac, Q[sc, ac])
+            sc, sa = self.Compute_PIC_PUA_Given_TC_TA(N, 1, 1, 0.1, 0.5, granularity, ac / granularity)
+            C[i] = sc / granularity
+            A[i] = sa / granularity
+            T[i] = i
+
+        #plt.plot(C)
+
+
+        pyplot.plot(T, C, 'C')
+        pyplot.plot(T, A)
+        pyplot.plot(T, C + A)
+        pyplot.show()
+
 
 if __name__ == "__main__":
 
@@ -258,4 +291,4 @@ if __name__ == "__main__":
     #print(wars.nextW())
     store = DistributedStorageSystem()
     #print(store.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, .5, 1000)) #
-    store.tabularQLearning(100)
+    store.tabularQLearning(300, 5)
