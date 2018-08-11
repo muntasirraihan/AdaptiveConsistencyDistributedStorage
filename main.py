@@ -181,7 +181,7 @@ class DistributedStorageSystem:
 
         # granularity = 100 # granularity of state space (C=pic, A=pua) and action space
 
-        Q = np.zeros([granularity, granularity, granularity]) # 2 D state space, C, A, 2D action space read and write delay
+        Q = np.zeros([granularity, granularity]) # 2 D state space, C, A, 2D action space read and write delay
 
         # Set learning parameters
         lr = .8
@@ -203,29 +203,42 @@ class DistributedStorageSystem:
             d = False
             j = 0
             #The Q-Table learning algorithm
-            while j < 99:
+            while j < 9:
                 j+=1
 
                 #Choose an action by greedily (with noise) picking from Q table
-                #ac, aa = np.argmax(Q[sc, sa, :] + np.random.randn(1, granularity)*(1./(i+1)))
+                ac = np.argmax(Q[sc, :] + np.random.randn(1, granularity)*(1./(i+1)))
 
                 # avoid noise for now
                 #print(sc, sa)
-                ac = np.argmax(Q[sc, sa:])
-                print(ac)
+                #ac = np.argmax(Q[sc:])
+                if (ac >= granularity):
+                    continue
+                #print(ac)
+                #if (Q[sc,0] > Q[sc,1]):
+                 #   ac = 0
+                #else:
+                 #   ac = 1
 
                 #Get new state and reward from environment
                 #s1,r,d,_ = env.step(a)
-                sc1, sa1 = self.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, 0.5, 1000, ac)
-                r = sc1 + sa1
-
+                #if (ac == 0):
+                sc1, sa1 = self.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, 0.5, granularity, ac/10.0)
+                #else:
+                 #   sc1, sa1 = self.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, 0.5, granularity, -1)
+                #r = sc1 + sa1
+                r = sc1
                 #sc1 = int_(floor(sc1 * granularity))
                 #sa1 = int_(floor(sa1 * granularity))
                 #print(sc1,sa1)
 
                 #Update Q-Table with new knowledge
-                Q[sc, sa, ac] = Q[sc, sa, ac] + lr*(r + y*np.max(Q[sc1, sa1,:]) - Q[sc, sa, ac])
+                print (sc, ac, Q[sc,ac])
+                #print (lr*(r + y*np.max(Q[sc1,:]) - Q[sc, ac]))
+
+                Q[sc, ac] = Q[sc, ac] + lr*(r + y*np.max(Q[sc1,:]) - Q[sc, ac])
                 rAll += r
+                #print(rAll)
                 sc = sc1
                 sa = sa1
                 #if d == True:
