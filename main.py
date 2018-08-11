@@ -183,7 +183,7 @@ class DistributedStorageSystem:
 
         return consistent_trials, latency_trials # return integer frequencies instead of real valued probabilities
 
-    def tabularQLearning(self, granularity, N):
+    def tabularQLearning(self, granularity, N, TC, TA):
         # instead of this gym environemnt, we need a custom environment simulating the consistency behavior of a black box storage system
         # env = gym.make('FrozenLake-v0')
         #Initialize table with all zeros
@@ -203,7 +203,7 @@ class DistributedStorageSystem:
         for i in range(num_episodes):
             #Reset environment and get first new observation
             #s = env.reset()
-            sc, sa = self.Compute_PIC_PUA_Given_TC_TA(N, 1, 1, 0.1, .5, granularity) # initial state
+            sc, sa = self.Compute_PIC_PUA_Given_TC_TA(N, 1, 1, TC, TA, granularity) # initial state
             #sc = int(round(scr))
             #sa = int(round(sar))
             # sc = int_(floor(scr * 100))
@@ -236,7 +236,7 @@ class DistributedStorageSystem:
                 #sc1, sa1 = self.Compute_PIC_PUA_Given_TC_TA(N, 1, 1, 0.1, 0.5, granularity, ac/granularity) # read delay action
                 print("action R")
                 print(ac)
-                sc1, sa1 = self.Compute_PIC_PUA_Given_TC_TA(N, ac, 1, 0.1, 0.5, granularity) # read quorum action
+                sc1, sa1 = self.Compute_PIC_PUA_Given_TC_TA(N, ac, 1, TC, TA, granularity) # read quorum action
 
                 #else:
                  #   sc1, sa1 = self.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, 0.5, granularity, -1)
@@ -270,7 +270,7 @@ class DistributedStorageSystem:
 
         print ("traversing learned policy")
         # initial state
-        sc, sa = self.Compute_PIC_PUA_Given_TC_TA(N, 1, 1, 0.1, .5, granularity)  # initial state
+        sc, sa = self.Compute_PIC_PUA_Given_TC_TA(N, 1, 1, TC, TA, granularity)  # initial state
 
         C = np.zeros(granularity)
         A = np.zeros(granularity)
@@ -281,7 +281,7 @@ class DistributedStorageSystem:
             ac = np.argmax(Q[sc, :]) + 1
             print(sc, sa, ac, Q[sc, ac])
             #sc, sa = self.Compute_PIC_PUA_Given_TC_TA(N, 1, 1, 0.1, 0.5, granularity, ac / granularity) # read delay policy
-            sc, sa = self.Compute_PIC_PUA_Given_TC_TA(N, ac, 1, 0.1, 0.5, granularity)  # read quorum policy
+            sc, sa = self.Compute_PIC_PUA_Given_TC_TA(N, ac, 1, TC, TA, granularity)  # read quorum policy
             C[i] = sc / granularity
             A[i] = sa / granularity
             R[i] = ac
@@ -306,4 +306,4 @@ if __name__ == "__main__":
     #print(wars.nextW())
     store = DistributedStorageSystem()
     #print(store.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, .5, 1000)) #
-    store.tabularQLearning(1000, 5)
+    store.tabularQLearning(1000, 5, 1, 1)
