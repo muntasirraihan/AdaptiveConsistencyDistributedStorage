@@ -293,8 +293,8 @@ class DistributedStorageSystem:
         #pyplot.plot(T, C, 'C')
         #pyplot.plot(T, A)
         #pyplot.plot(T, C)
-        pyplot.plot(T, C)
-        pyplot.show()
+        #pyplot.plot(T, C)
+        #pyplot.show()
         pyplot.plot(T, R)
         pyplot.show()
 
