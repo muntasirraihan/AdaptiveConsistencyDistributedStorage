@@ -114,7 +114,7 @@ class DistributedStorageSystem:
     # iterations = number of iterations to get estimates of PIC, and PUA
     # read_delay = amount by which read invocation is delayed
     # write_delay = amount by which write response is delayed
-    def Compute_PIC_PUA_Given_TC_TA(self, N, R, W, TC, TA, iterations, read_delay = 0, write_delay = 0):
+    def Compute_PIC_PUA_Given_TC_TA(self, N, R, W, TC, TA, iterations, read_delay = 0, write_delay = 0, type = 'LNKD_DISK'):
         consistent_trials = 0
         latency_trials = 0
         wars = WARS()
@@ -128,17 +128,17 @@ class DistributedStorageSystem:
 
             for replica in range(N):
                 #Ws.append(wars.nextW())
-                Ws[replica] = wars.nextW('LNKD_DISK')
+                Ws[replica] = wars.nextW(type)
 
                 #As.append(wars.nextA())
-                As[replica] = wars.nextA('LNKD_DISK')
+                As[replica] = wars.nextA(type)
 
                 write_latencies[replica] = Ws[replica] + As[replica] + write_delay
 
                 #Rs.append(wars.nextR())
                 #Ss.append(wars.nextS())
-                Rs[replica] = wars.nextR('LNKD_DISK')
-                Ss[replica] = wars.nextS('LNKD_DISK')
+                Rs[replica] = wars.nextR(type)
+                Ss[replica] = wars.nextS(type)
 
                 read_latencies[replica] = Rs[replica] + Ss[replica] + read_delay
             #print(write_latencies)
@@ -152,10 +152,10 @@ class DistributedStorageSystem:
 
             #sorted_read_latencies = read_latencies.sort()
             #read_finish = sorted_read_latencies[R]
-            print("R")
-            print(R)
-            print("read_latencies")
-            print(read_latencies)
+            #print("R")
+            #print(R)
+            #print("read_latencies")
+            #print(read_latencies)
 
             read_finish = hpq.nsmallest(R, read_latencies)[0]
 
@@ -203,7 +203,7 @@ class DistributedStorageSystem:
         for i in range(num_episodes):
             #Reset environment and get first new observation
             #s = env.reset()
-            sc, sa = self.Compute_PIC_PUA_Given_TC_TA(N, 1, 1, TC, TA, granularity) # initial state
+            sc, sa = self.Compute_PIC_PUA_Given_TC_TA(N, 1, 1, TC, TA, granularity, 0, 0, 'LNKD_DISK') # initial state
             #sc = int(round(scr))
             #sa = int(round(sar))
             # sc = int_(floor(scr * 100))
@@ -305,5 +305,6 @@ if __name__ == "__main__":
     #wars = WARS('TS')
     #print(wars.nextW())
     store = DistributedStorageSystem()
-    #print(store.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, .5, 1000)) #
-    store.tabularQLearning(1000, 5, 1, 1)
+    print(store.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, .5, 1000, 0, 0, 'LNKD_SSD'))
+    print(store.Compute_PIC_PUA_Given_TC_TA(3, 1, 1, 0.1, .5, 1000, 0, 0, 'LNKD_DISK'))
+    #store.tabularQLearning(1000, 5, 1, 1)
